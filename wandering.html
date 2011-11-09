@@ -1,0 +1,78 @@
+<html>
+<head>
+
+<script type="text/javascript" src="js/prototype.js"></script>
+<script type="text/javascript" src="fx/flapjax.js"></script>
+
+<title>Flapjax Demo: Wanderling Letters</title>
+
+<script type="text/javascript">
+
+function loader() {
+
+  // Just 5 characters inserted as individual DOM
+  // elements, with id's p0, p1, and etc.
+
+  var ary = 'Hello'.split('');
+
+  ary.forEach(function(x, i) {
+    var str = "<div id=p" + i + ">" + x + "</div>";
+    document.write(str);
+  });
+
+  // Make a timer and pos0B that starts from 0 and ten pixels toward right for
+  // each seconds.
+
+  var t = timerB(100);
+  var start = valueNow(t);
+  var pos0B = t.liftB(function(x) {return (x - start) / 100});
+  insertDomB(
+    DIV({style: { position: 'absolute',
+                  left: pos0B,
+                  top: 0 }, id: 'p0'},
+        'H'),
+    'p0');
+
+  // A function from the mailing list archive to watch the position change.
+  // rightB :: Element -> Behavior cumulative position of right edge
+  function rightB(t_) {
+    var t = $(t_); // adds Prototype methods
+    var f = function() {
+      var pos = Position.cumulativeOffset(t);
+      var size = t.getDimensions();
+      return pos.left + size.width;
+    };
+    var g = function() {
+      return t['style'];
+    };
+    return $E(t, "DOMAttrModified")
+     .filterE(function(x) { return x.attrName == "style";})
+     .mapE(g)
+     .startsWith(g());
+  }
+
+  // The following will eventually are going to wrap in a loop to deal
+  // with all characters, but for now I only write code for the second character.
+
+  // Just give it a name for future extension.
+
+  var pos1B = rightB('p0');
+
+  document.write('<div id="timer">abc</div>');
+
+  insertDomB(pos1B.liftB(function(x) {return x.cssText;}), 'timer');
+
+//    insertDomB(
+//      DIV({style: { position: 'absolute',
+//                    left: pos1B,
+//                    top: 0 }, id: 'p1'},
+//          'e'),
+//      'p1');
+
+}
+</script>
+</head>
+<body onload="loader()">
+</body>
+</html>
+
