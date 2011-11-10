@@ -14,7 +14,7 @@ function loader() {
   var TextFieldHeight = 300;
   var SpeedLimit = 13;
 
-  var ary = 'Hello Hello Hello Helloo Hello Helloo Hello Helloo Hello Hello Hello Hello Hello Helloo Hello Helloo Hello Hello Hello Helloooooooooo'.split('');
+  var ary = 'The first three years were devoted to making much smaller, simpler, and more readable versions of many of the prime parts of personal computing, including: graphics and sound, viewing/windowing, UIs, text, composition, cells, TCP/IP, etc. These have turned out well (they are chronicled in previous NSF reports and in our papers and memos).'.split('');
   var posArray = new Array(ary.length);
 
   var sp = $('space').getDimensions().width;
@@ -26,7 +26,7 @@ function loader() {
   document.body.innerHTML = str;
 
   elapsedTimeB = (function (x) {
-    var t = timerB(10);
+    var t = timerB(50);
     var start = valueNow(t);
     return t.liftB(function(x) {return x - start})})();
 
