@@ -10,9 +10,14 @@
 
 function loader() {
 
-  var sp = $('space').getDimensions().width;
+  var TextFieldWidth = 300;
+  var TextFieldHeight = 300;
+  var SpeedLimit = 13;
 
-  var ary = 'He llo He llo He llo He llo Ho Ho Ho Ho Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho Ho'.split('');
+  var ary = 'Hello Hello Hello Helloo Hello Helloo Hello Helloo Hello Hello Hello Hello Hello Helloo Hello Helloo Hello Hello Hello Helloooooooooo'.split('');
+  var posArray = new Array(ary.length);
+
+  var sp = $('space').getDimensions().width;
 
   str = '';
   for (i = 0; i < ary.length; i++) {
@@ -20,7 +25,6 @@ function loader() {
   }
   document.body.innerHTML = str;
 
-  // Figure out the initial condition of the first value.
   elapsedTimeB = (function (x) {
     var t = timerB(100);
     var start = valueNow(t);
@@ -33,57 +37,41 @@ function loader() {
   function place(index, pos) {
     var me = $('p' + index);
     var prev = index == 0 ? null : $('p' + (index - 1));
-    var prevSettled = prev == null ? true : pos.settled;
-    if (!prevSettled) {
-       me.b = false;
+    var prevSettled = index == 0 ? true : pos.settled;
+    if (me.asked) {
+      if(isSpace(prev)) {
+        me.b = true;
+      } else {
+        prev.asked = true;
+      }
     }
-    var targetX = prev == null ? 0 : (me.b ? 0 : pos.r);
-    var targetY = prev == null ? 0 : (me.b ? pos.y + me.getDimensions().height : pos.y);
+    var targetX = index == 0 ? 0 : (me.b ? 0 : pos.r);
+    var targetY = index == 0 ? 0 : (me.b ? pos.y + me.getDimensions().height : pos.y);
     var curX = parseFloat(me.style.getPropertyValue('left'));
     var curY = parseFloat(me.style.getPropertyValue('top'));
 
     var diffX = targetX - curX;
     var diffY = targetY - curY;
     var norm = Math.sqrt(diffX * diffX + diffY * diffY);
-    if (norm < 13) {
+    if (norm < SpeedLimit) {
       var newRight = targetX + me.getDimensions().width;
       if (newRight > TextFieldWidth && prevSettled) {
-        me.b = true;
-        return {x: targetX, y: targetY + me.getDimensions().height, r: me.getDimensions().width, settled: false};
-      } else {
-        return {x: targetX, y: targetY, r: targetX + (isSpace(me) ? sp : me.getDimensions().width), settled: true};
+          prev.asked = true;
       }
+      return {x: targetX, y: targetY, r: targetX + me.w, settled: prevSettled && !(newRight > TextFieldWidth)};
     }
-    var speed = Math.min(norm, 13);
+    var speed = Math.min(norm, SpeedLimit);
     var speedX = (diffX/norm) * speed;
     var speedY = (diffY/norm) * speed;
+    var newX = curX + speedX;
     var jit = prev == null ? 0 : Math.random() * 6 - 3;
-    return {x: curX + speedX, y: curY + speedY + jit, r: curX + speedX + (isSpace(me) ? sp : me.getDimensions().width), settled: false};
+    return {x: newX, y: curY + speedY + jit, r: newX + me.w, settled: false};
   };
-
-
-  function placeFirst() {
-    return place(0, {x: 0, y: 0, r: 0});
-  };
-
-  var TextFieldWidth = 300;
-  var TextFieldHeight = 300;
-
-  var posArray = new Array(ary.length);
-  var rightArray = new Array(ary.length);
 
   for (i = 0; i < ary.length; i++) {
     var f = (function() {
       var ii = i;
-      if (ii == 0) {
-        return function (time) {
-          return placeFirst();
-        }
-      } else {
-        return function (pos) {
-          return place(ii, pos);
-        }
-      }
+      return ii == 0 ? function (time) {return place(0, {x: 0, y: 0, r: 0})} : function (pos) {return place(ii, pos)}
     })();
     posArray[i] = (i == 0 ? elapsedTimeB : posArray[i-1])
                      .changes()
@@ -92,7 +80,7 @@ function loader() {
     insertDomB(
       DIV({style: { position: 'absolute',
                     left: posArray[i].liftB(function(x) {return x.x;}),
-                    top: posArray[i].liftB(function(y) {return y.y;}) }, id: 'p' + i, b: false},
+                    top: posArray[i].liftB(function(y) {return y.y;}) }, id: 'p' + i, b: false, w: isSpace('p' + i) ? sp : $('p' + i).getDimensions().width},
           ary[i]),
       'p' + i);
   }
