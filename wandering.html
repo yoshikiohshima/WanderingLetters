@@ -10,112 +10,64 @@
 
 function loader() {
 
+  // Figure out the initial condition of the first value.
+  elapsedTimeB = (function (x) {
+    var t = timerB(100);
+    var start = valueNow(t);
+    return t.liftB(function(x) {return x - start});})();
+
+  function nextPos(elapsedTime, targetX, targetY, curX, curY) {
+    var diffX = targetX - curX;
+    var diffY = targetY - curY;
+    var norm = Math.sqrt(diffX * diffX + diffY * diffY);
+    if (norm == 0) {
+      return {x: curX, y: curY};
+    }
+    var speed = Math.min(norm, 13);
+    var speedX = (diffX/norm) * speed;
+    var speedY = (diffY/norm) * speed;
+    return {x: curX + speedX, y: curY + speedY};
+  };
+
   var TextFieldWidth = 300;
   var TextFieldHeight = 300;
   var ary = 'Hello'.split('');
 
+  var posArray = new Array(5);
   var posXArray = new Array(5);
   var posYArray = new Array(5);
 
-  // Random Placement
+  for (i = 0; i < 5; i++) {
+    var f = (function() {
+      var ii = i;
+      return function (time) {
+        var me = $('p' + ii);
+        var prev = ii == 0 ? null : $('p' + (ii-1));
+        if (ii != 0) {
+	  var dim = prev.getDimensions();
+        }
+        return nextPos(time,
+      	     	          prev == null ? 0 : parseFloat(prev.style.getPropertyValue('left')) + dim.width,
+      	     	          prev == null ? 0 : parseFloat(prev.style.getPropertyValue('top')),
+                          parseFloat(me.style.getPropertyValue('left')),
+                          parseFloat(me.style.getPropertyValue('top')))}})();
+    posArray[i] = elapsedTimeB
+                  .changes()
+                  .mapE(f)
+                  .startsWith({x: Math.random() * TextFieldWidth, y: Math.random() * TextFieldHeight});
+   posXArray[i] = posArray[i].liftB(function(x) {return x.x;});
+   posYArray[i] = posArray[i].liftB(function(y) {return y.y;});
+  }
 
   for (i = 0; i < 5; i++) {
     insertDomB(
       DIV({style: { position: 'absolute',
-                    left: posXArray[i] = Math.random() * TextFieldWidth,
-                    top: posYArray[i] = Math.random() * TextFieldHeight }, id: 'p' + i},
+                    left: posXArray[i],
+                    top: posYArray[i] }, id: 'p' + i},
           ary[i]),
       'p' + i);
   }
 
-  // rightB :: Element -> Behavior cumulative position of right edge
-  function rightB(t_) {
-    var t = $(t_); // adds Prototype methods
-    var f = function() {
-      var size = t.getDimensions();
-      return parseFloat(t.style.getPropertyValue('left')) + size.width;
-    };
-    return $E(t, "DOMAttrModified")
-     .filterE(function(x) { return x.attrName == "style";})
-     .mapE(f)
-     .startsWith(f());
-  }
-
-  function leftB(t_) {
-    var t = $(t_); // adds Prototype methods
-    var f = function() {
-      return parseFloat(t.style.getPropertyValue('left'));
-    };
-    return $E(t, "DOMAttrModified")
-     .filterE(function(x) { return x.attrName == "style";})
-     .mapE(f)
-     .startsWith(f());
-  }
-
-  function topB(t_) {
-    var t = $(t_);
-    var f = function() {
-      var size = t.getDimensions();
-      return parseFloat(t.style.getPropertyValue('top'));
-    };
-    return $E(t, "DOMAttrModified")
-     .filterE(function(x) { return x.attrName == "style";})
-     .mapE(f)
-     .startsWith(f());
-  }
-
-  // Make a timer and pos0B that starts from 0 and ten pixels toward right for
-  // each seconds.
-
-  // Figure out the initial condition of the first value.
-  var t = timerB(1000);
-  var start = valueNow(t);
-  var elapsedTimeB = t.liftB(function(x) {return x - start});
-
-  function nextPosX(elapsedTime, targetX, targetY, curX, curY) {
-    var diffX = targetX - curX;
-    var diffY = targetY - curY;
-    var norm = Math.sqrt(diffX * diffX + diffY * diffY);
-    var speed = Math.min(norm, 13);
-    var speedX = (diffX/norm) * speed;
-    return curX + speedX;
-  };
-  function nextPosY(elapsedTime, targetX, targetY, curX, curY) {
-    var diffX = targetX - curX;
-    var diffY = targetY - curY;
-    var norm = Math.sqrt(diffX * diffX + diffY * diffY);
-    var speed = Math.min(norm, 13);
-    var speedY = (diffY/norm) * speed;
-    return curY + speedY;
-  };
-
-  var delayedLeftB = leftB('p0').delayB(1000);
-  var delayedTopB = topB('p0').delayB(1000);
-
-  posXArray[0] = elapsedTimeB.liftB(nextPosX, constantB(0), constantB(0), delayedLeftB, delayedTopB);
-  posXArray[0] = elapsedTimeB.liftB(nextPosY, constantB(0), constantB(0), delayedLeftB, delayedTopB);
-
-  insertDomB(
-    DIV({style: { position: 'absolute',
-                  left: posXArray[0],
-                  top: posYArray[0] }, id: 'p0'},
-        ary[0]),
-    'p' + 0);
-
-  insertDomB(
-    leftB('p0'),
-    'log');
-
-//  for (i = 1; i < 5; i++) {
-//    id = 'p' + i;
-//    prevId = 'p' + (i-1);
-//    insertDomB(
-//      DIV({style: { position: 'absolute',
-//                    left: delayB(rightB(prevId), 300),
-//                    top: topB(prevId) }, id: id},
-//          ary[i]),
-//      id);
-//  }
 }
 </script>
 </head>
@@ -125,7 +77,6 @@ function loader() {
 <span id="p2">l</span>
 <span id="p3">l</span>
 <span id="p4">o</span>
-<span id="log">log</span>
 </body>
 </html>
 
