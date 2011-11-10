@@ -10,73 +10,97 @@
 
 function loader() {
 
+  var sp = $('space').getDimensions().width;
+
+  var ary = 'He llo He llo He llo He llo Ho Ho Ho Ho Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho HoHo Ho Ho'.split('');
+
+  str = '';
+  for (i = 0; i < ary.length; i++) {
+    str = str + '<span id=p' + i + '>' + ary[i] + '</span>';
+  }
+  document.body.innerHTML = str;
+
   // Figure out the initial condition of the first value.
   elapsedTimeB = (function (x) {
     var t = timerB(100);
     var start = valueNow(t);
-    return t.liftB(function(x) {return x - start});})();
+    return t.liftB(function(x) {return x - start})})();
 
-  function nextPos(elapsedTime, targetX, targetY, curX, curY) {
+  function isSpace(t_) {
+    return $(t_).firstChild.nodeValue == ' ';
+  }
+
+  function place(index, pos) {
+    var me = $('p' + index);
+    var prev = index == 0 ? null : $('p' + (index - 1));
+    var prevSettled = prev == null ? true : pos.settled;
+    if (!prevSettled) {
+       me.b = false;
+    }
+    var targetX = prev == null ? 0 : (me.b ? 0 : pos.r);
+    var targetY = prev == null ? 0 : (me.b ? pos.y + me.getDimensions().height : pos.y);
+    var curX = parseFloat(me.style.getPropertyValue('left'));
+    var curY = parseFloat(me.style.getPropertyValue('top'));
+
     var diffX = targetX - curX;
     var diffY = targetY - curY;
     var norm = Math.sqrt(diffX * diffX + diffY * diffY);
-    if (norm == 0) {
-      return {x: curX, y: curY};
+    if (norm < 13) {
+      var newRight = targetX + me.getDimensions().width;
+      if (newRight > TextFieldWidth && prevSettled) {
+        me.b = true;
+        return {x: targetX, y: targetY + me.getDimensions().height, r: me.getDimensions().width, settled: false};
+      } else {
+        return {x: targetX, y: targetY, r: targetX + (isSpace(me) ? sp : me.getDimensions().width), settled: true};
+      }
     }
     var speed = Math.min(norm, 13);
     var speedX = (diffX/norm) * speed;
     var speedY = (diffY/norm) * speed;
-    return {x: curX + speedX, y: curY + speedY};
+    var jit = prev == null ? 0 : Math.random() * 6 - 3;
+    return {x: curX + speedX, y: curY + speedY + jit, r: curX + speedX + (isSpace(me) ? sp : me.getDimensions().width), settled: false};
+  };
+
+
+  function placeFirst() {
+    return place(0, {x: 0, y: 0, r: 0});
   };
 
   var TextFieldWidth = 300;
   var TextFieldHeight = 300;
-  var ary = 'Hello'.split('');
 
-  var posArray = new Array(5);
-  var posXArray = new Array(5);
-  var posYArray = new Array(5);
+  var posArray = new Array(ary.length);
+  var rightArray = new Array(ary.length);
 
-  for (i = 0; i < 5; i++) {
+  for (i = 0; i < ary.length; i++) {
     var f = (function() {
       var ii = i;
-      return function (time) {
-        var me = $('p' + ii);
-        var prev = ii == 0 ? null : $('p' + (ii-1));
-        if (ii != 0) {
-	  var dim = prev.getDimensions();
+      if (ii == 0) {
+        return function (time) {
+          return placeFirst();
         }
-        return nextPos(time,
-      	     	          prev == null ? 0 : parseFloat(prev.style.getPropertyValue('left')) + dim.width,
-      	     	          prev == null ? 0 : parseFloat(prev.style.getPropertyValue('top')),
-                          parseFloat(me.style.getPropertyValue('left')),
-                          parseFloat(me.style.getPropertyValue('top')))}})();
-    posArray[i] = elapsedTimeB
-                  .changes()
-                  .mapE(f)
-                  .startsWith({x: Math.random() * TextFieldWidth, y: Math.random() * TextFieldHeight});
-   posXArray[i] = posArray[i].liftB(function(x) {return x.x;});
-   posYArray[i] = posArray[i].liftB(function(y) {return y.y;});
-  }
-
-  for (i = 0; i < 5; i++) {
+      } else {
+        return function (pos) {
+          return place(ii, pos);
+        }
+      }
+    })();
+    posArray[i] = (i == 0 ? elapsedTimeB : posArray[i-1])
+                     .changes()
+                     .mapE(f)
+                     .startsWith({x: Math.random() * TextFieldWidth, y: Math.random() * TextFieldHeight, r: 0, settled: false});
     insertDomB(
       DIV({style: { position: 'absolute',
-                    left: posXArray[i],
-                    top: posYArray[i] }, id: 'p' + i},
+                    left: posArray[i].liftB(function(x) {return x.x;}),
+                    top: posArray[i].liftB(function(y) {return y.y;}) }, id: 'p' + i, b: false},
           ary[i]),
       'p' + i);
   }
-
 }
 </script>
 </head>
 <body onload="loader()">
-<span id="p0">H</span>
-<span id="p1">e</span>
-<span id="p2">l</span>
-<span id="p3">l</span>
-<span id="p4">o</span>
+<span id='space'>x</span>
 </body>
 </html>
 
