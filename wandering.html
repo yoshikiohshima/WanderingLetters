@@ -1,7 +1,7 @@
 <html>
 <head>
 
-<script type="text/javascript" src="js/prototype.js"></script>
+<script type="text/javascript" src="fx/prototype.js"></script>
 <script type="text/javascript" src="fx/flapjax.js"></script>
 
 <title>Flapjax Demo: Wanderling Letters</title>
@@ -26,7 +26,7 @@ function loader() {
   document.body.innerHTML = str;
 
   elapsedTimeB = (function (x) {
-    var t = timerB(100);
+    var t = timerB(10);
     var start = valueNow(t);
     return t.liftB(function(x) {return x - start})})();
 
